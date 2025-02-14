@@ -1,0 +1,30 @@
+server:
+  port: 12345
+  shutdown: graceful
+
+spring:
+  application:
+    name: test
+  datasource:
+    url: jdbc:postgresql://localhost:5432/wirebarley
+    username: test
+    password: test
+  docker:
+    compose:
+      enabled: true
+      file: ./compose.yaml
+      skip:
+        in-tests: false
+  flyway:
+    enabled: true
+    baseline-on-migrate: true
+    baseline-version: 1
+    locations:
+      - classpath:db/migration
+  jpa:
+    generate-ddl: false
+    hibernate:
+      ddl-auto: none
+  sql:
+    init:
+      mode: always

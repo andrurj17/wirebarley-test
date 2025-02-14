@@ -1,0 +1,11 @@
+services:
+  postgres:
+    container_name: "wirebarley-postgres"
+    image: postgres:latest
+    hostname: localhost
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_DB: wirebarley
+      POSTGRES_USER: test
+      POSTGRES_PASSWORD: test
