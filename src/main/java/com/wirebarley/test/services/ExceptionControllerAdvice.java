@@ -61,6 +61,12 @@ public class ExceptionControllerAdvice {
         return ResponseEntity.badRequest().body(e.getMessage());
     }
 
+    @ExceptionHandler({AssertionError.class})
+    public ResponseEntity<String> handleAssertionError(@NonNull final AssertionError e) {
+        log.error("Assertion error encountered with message: {} and cause: {}", e.getMessage(), e.getCause(), e);
+        return ResponseEntity.badRequest().body(e.getMessage());
+    }
+
     @ExceptionHandler({Exception.class})
     public ResponseEntity<String> handleException(@NonNull final Exception e) {
         log.error("Exception encountered with message: {} and cause: {}", e.getMessage(), e.getCause(), e);
