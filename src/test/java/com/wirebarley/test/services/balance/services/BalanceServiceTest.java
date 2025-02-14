@@ -87,13 +87,13 @@ class BalanceServiceTest {
         final var lock = mock(ReentrantLock.class);
 
         doReturn(Optional.of(balance)).when(repository).findById(any());
-        doReturn(balance).when(repository).save(any());
+        doNothing().when(repository).updateBalance(1, Currency.KRW, BigDecimal.ONE);
         doReturn(lock).when(lockManagerService).getLockForUser(1);
 
         service.topUp(1, BigDecimal.ONE);
 
         verify(repository, times(1)).findById(any());
-        verify(repository, times(1)).save(any());
+        verify(repository, times(1)).updateBalance(1, Currency.KRW, BigDecimal.ONE);
         verify(lockManagerService, times(1)).getLockForUser(1);
         verify(lock, times(1)).lock();
         verify(lock, times(1)).unlock();
@@ -112,13 +112,13 @@ class BalanceServiceTest {
         final var lock = mock(ReentrantLock.class);
 
         doReturn(Optional.of(balance)).when(repository).findById(any());
-        doReturn(balance).when(repository).save(any());
+        doNothing().when(repository).updateBalance(1, Currency.KRW, BigDecimal.ONE.negate());
         doReturn(lock).when(lockManagerService).getLockForUser(1);
 
         service.withdraw(1, BigDecimal.ONE);
 
         verify(repository, times(1)).findById(any());
-        verify(repository, times(1)).save(any());
+        verify(repository, times(1)).updateBalance(1, Currency.KRW, BigDecimal.ONE.negate());
         verify(lockManagerService, times(1)).getLockForUser(1);
         verify(lock, times(1)).lock();
         verify(lock, times(1)).unlock();

@@ -90,9 +90,9 @@ public class BalanceService {
         }
     }
 
-    private void updateBalance(@NonNull final Balance balance, @NonNull final BigDecimal deltaAmount) {
-        final var newBalance = new Balance(balance.getUserId(), balance.getCurrency(), balance.getAmount().add(deltaAmount));
-        log.info("Updating balance for user {} from {} to {}", balance.getUserId(), balance.getAmount(), newBalance.getAmount());
-        balanceRepository.save(newBalance);
+    @Transactional
+    void updateBalance(@NonNull final Balance balance, @NonNull final BigDecimal deltaAmount) {
+        log.info("Updating balance for user {} from {} with delta {}", balance.getUserId(), balance.getAmount(), deltaAmount);
+        balanceRepository.updateBalance(balance.getUserId(), balance.getCurrency(), deltaAmount);
     }
 }
