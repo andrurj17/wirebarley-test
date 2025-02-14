@@ -13,6 +13,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import java.math.BigDecimal;
 import java.util.List;
 import java.util.Optional;
+import java.util.concurrent.locks.ReentrantLock;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -23,6 +24,8 @@ class BalanceServiceTest {
 
     @Mock
     private BalanceRepository repository;
+    @Mock
+    private LockManagerService lockManagerService;
     @InjectMocks
     private BalanceService service;
 
@@ -35,7 +38,7 @@ class BalanceServiceTest {
         service.createBalance(1);
 
         verify(repository, times(1)).save(any());
-        verifyNoMoreInteractions(repository);
+        verifyNoMoreInteractions(repository, lockManagerService);
     }
 
     @Test
@@ -48,7 +51,7 @@ class BalanceServiceTest {
 
         assertEquals(balance, result);
         verify(repository, times(1)).findById(any());
-        verifyNoMoreInteractions(repository);
+        verifyNoMoreInteractions(repository, lockManagerService);
     }
 
     @Test
@@ -61,7 +64,7 @@ class BalanceServiceTest {
 
         assertEquals(balance, result);
         verify(repository, times(1)).findById(any());
-        verifyNoMoreInteractions(repository);
+        verifyNoMoreInteractions(repository, lockManagerService);
     }
 
     @Test
@@ -75,58 +78,73 @@ class BalanceServiceTest {
         assertEquals(1, result.size());
         assertEquals(balance, result.getFirst());
         verify(repository, times(1)).findAllByUserId(1);
-        verifyNoMoreInteractions(repository);
+        verifyNoMoreInteractions(repository, lockManagerService);
     }
 
     @Test
     void shouldTopUp() {
         final var balance = new Balance(1, Currency.KRW, BigDecimal.ONE);
+        final var lock = mock(ReentrantLock.class);
 
         doReturn(Optional.of(balance)).when(repository).findById(any());
         doReturn(balance).when(repository).save(any());
+        doReturn(lock).when(lockManagerService).getLockForUser(1);
 
         service.topUp(1, BigDecimal.ONE);
 
         verify(repository, times(1)).findById(any());
         verify(repository, times(1)).save(any());
-        verifyNoMoreInteractions(repository);
+        verify(lockManagerService, times(1)).getLockForUser(1);
+        verify(lock, times(1)).lock();
+        verify(lock, times(1)).unlock();
+        verifyNoMoreInteractions(repository, lockManagerService, lock);
     }
 
     @Test
     void shouldNotTopUpWhenAmountIsZero() {
         assertThrows(AssertionError.class, () -> service.topUp(1, BigDecimal.ZERO));
-        verifyNoMoreInteractions(repository);
+        verifyNoMoreInteractions(repository, lockManagerService);
     }
 
     @Test
     void shouldWithdraw() {
         final var balance = new Balance(1, Currency.KRW, BigDecimal.TEN);
+        final var lock = mock(ReentrantLock.class);
 
         doReturn(Optional.of(balance)).when(repository).findById(any());
         doReturn(balance).when(repository).save(any());
+        doReturn(lock).when(lockManagerService).getLockForUser(1);
 
         service.withdraw(1, BigDecimal.ONE);
 
         verify(repository, times(1)).findById(any());
         verify(repository, times(1)).save(any());
-        verifyNoMoreInteractions(repository);
+        verify(lockManagerService, times(1)).getLockForUser(1);
+        verify(lock, times(1)).lock();
+        verify(lock, times(1)).unlock();
+        verifyNoMoreInteractions(repository, lockManagerService, lock);
     }
 
     @Test
     void shouldNotWithdrawWhenAmountIsZero() {
         assertThrows(AssertionError.class, () -> service.withdraw(1, BigDecimal.ZERO));
-        verifyNoMoreInteractions(repository);
+        verifyNoMoreInteractions(repository, lockManagerService);
     }
 
     @Test
     void shouldThrowInsufficientBalanceExceptionWhenWithdrawingMoreThanBalance() {
         final var balance = new Balance(1);
+        final var lock = mock(ReentrantLock.class);
 
         doReturn(Optional.of(balance)).when(repository).findById(any());
+        doReturn(lock).when(lockManagerService).getLockForUser(1);
 
         assertThrows(InsufficientBalanceException.class, () -> service.withdraw(1, BigDecimal.TEN));
 
         verify(repository, times(1)).findById(any());
-        verifyNoMoreInteractions(repository);
+        verify(lockManagerService, times(1)).getLockForUser(1);
+        verify(lock, times(1)).lock();
+        verify(lock, times(1)).unlock();
+        verifyNoMoreInteractions(repository, lockManagerService, lock);
     }
 }

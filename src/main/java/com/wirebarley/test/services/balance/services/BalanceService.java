@@ -25,6 +25,9 @@ public class BalanceService {
     @NonNull
     private final BalanceRepository balanceRepository;
 
+    @NonNull
+    private final LockManagerService lockManagerService;
+
     public void createBalance(final long userId) {
         balanceRepository.save(new Balance(userId));
     }
@@ -54,23 +57,37 @@ public class BalanceService {
     public void topUp(final long userId, @NonNull final BigDecimal amount) {
         assert amount.compareTo(BigDecimal.ZERO) > 0;
 
-        final var balance = getBalance(userId);
+        final var lock = lockManagerService.getLockForUser(userId);
+        lock.lock();
 
-        log.info("Topping up {} to user {}", amount, userId);
-        updateBalance(balance, amount);
+        try {
+            final var balance = getBalance(userId);
+
+            log.info("Topping up {} to user {}", amount, userId);
+            updateBalance(balance, amount);
+        } finally {
+            lock.unlock();
+        }
     }
 
     @Transactional
     public void withdraw(final long userId, @NonNull final BigDecimal amount) throws InsufficientBalanceException {
         assert amount.compareTo(BigDecimal.ZERO) > 0;
 
-        final var balance = getBalance(userId);
+        final var lock = lockManagerService.getLockForUser(userId);
+        lock.lock();
 
-        if (balance.getAmount().compareTo(amount) < 0) {
-            throw new InsufficientBalanceException(userId);
+        try {
+            final var balance = getBalance(userId);
+
+            if (balance.getAmount().compareTo(amount) < 0) {
+                throw new InsufficientBalanceException(userId);
+            }
+            log.info("Withdrawing {} from user {}", amount, userId);
+            updateBalance(balance, amount.negate());
+        } finally {
+            lock.unlock();
         }
-        log.info("Withdrawing {} from user {}", amount, userId);
-        updateBalance(balance, amount.negate());
     }
 
     private void updateBalance(@NonNull final Balance balance, @NonNull final BigDecimal deltaAmount) {
